@@ -14,6 +14,7 @@
 
 #include <list>
 #include <mutex>  // NOLINT
+#include <shared_mutex>
 #include <vector>
 
 #include "buffer/replacer.h"
@@ -47,6 +48,9 @@ class ClockReplacer : public Replacer {
 
  private:
   // TODO(student): implement me!
+  frame_id_t clock_hand_ = 0;
+  std::vector<std::tuple<bool, bool>> frames_;
+  std::shared_mutex mutex_;
 };
 
 }  // namespace bustub

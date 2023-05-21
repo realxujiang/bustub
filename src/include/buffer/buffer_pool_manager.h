@@ -166,7 +166,9 @@ class BufferPoolManager {
   Replacer *replacer_;
   /** List of free pages. */
   std::list<frame_id_t> free_list_;
-  /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
-  std::mutex latch_;
+  /** This latch protects shared data structures: page. We recommend updating this comment to describe what it protects. */
+  std::shared_mutex latch_;
+  /** Get or allocate an available frame id **/
+  frame_id_t GetFrameId();
 };
 }  // namespace bustub
