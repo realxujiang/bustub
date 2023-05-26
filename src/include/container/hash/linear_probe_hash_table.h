@@ -91,12 +91,46 @@ class LinearProbeHashTable : public HashTable<KeyType, ValueType, KeyComparator>
   page_id_t header_page_id_;
   BufferPoolManager *buffer_pool_manager_;
   KeyComparator comparator_;
+  std::vector<page_id_t> page_ids_;
+  size_t num_buckets_;
+  size_t num_pages_;
+  size_t last_block_array_size_;
 
   // Readers includes inserts and removes, writer is only resize
   ReaderWriterLatch table_latch_;
 
   // Hash function
   HashFunction<KeyType> hash_fn_;
+
+  using slot_index_t = size_t;
+  using block_index_t = size_t;
+  enum class LockType {READ = 0, WRITE = 1};
+
+  void InitHeaderPage(HashTableHeaderPage *page);
+
+  std::tuple<slot_index_t, block_index_t, slot_offset_t> GetIndex(const KeyType &key);
+
+  void StepForward(slot_offset_t &bucket_index, block_index_t &block_index, Page *&raw_block_page,
+                   HASH_TABLE_BLOCK_TYPE *&block_page, LockType lockType);
+
+  bool InsertImpl(Transaction *transaction, const KeyType &key, const ValueType &value);
+
+  inline bool IsMatch(HASH_TABLE_BLOCK_TYPE *block_page, slot_offset_t bucket_index, const KeyType &key,
+                      const ValueType &value) {
+    return !comparator_(key, block_page->KeyAt(bucket_index)) && value == block_page->ValueAt(bucket_index);
+  }
+
+  inline HashTableHeaderPage *HeaderPageCast(Page *page) {
+    return reinterpret_cast<HashTableHeaderPage *>(page->GetData());
+  }
+
+  inline HASH_TABLE_BLOCK_TYPE *BlockPageCast(Page *page) {
+    return reinterpret_cast<HASH_TABLE_BLOCK_TYPE *>(page->GetData());
+  }
+
+  inline size_t GetBlockArraySize(block_index_t block_index) {
+    return block_index < num_pages_ - 1 ? BLOCK_ARRAY_SIZE : last_block_array_size_;
+  }
 };
 
 }  // namespace bustub
