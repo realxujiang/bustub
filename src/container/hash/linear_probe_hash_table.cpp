@@ -20,6 +20,9 @@
 #include "common/exception.h"
 #include "common/logger.h"
 #include "common/rid.h"
+#include "common/util/hash_util.h"
+#include "storage/index/hash_comparator.h"
+#include "storage/table/tmp_tuple.h"
 
 namespace bustub {
 
@@ -148,7 +151,7 @@ bool HASH_TABLE_TYPE::InsertImpl(Transaction *transaction, const KeyType &key, c
     }
   }
   raw_block_page->WUnlatch();
-  buffer_pool_manager_->UnpinPage(raw_block_page->GetPageId(), false);
+  buffer_pool_manager_->UnpinPage(raw_block_page->GetPageId(), success);
   return success;
 }
 
@@ -202,7 +205,7 @@ void HASH_TABLE_TYPE::Resize(size_t initial_size) {
   table_latch_.WLock();
   // 扩容 HASH 表为原来的 2 倍
   num_buckets_ = 2 * initial_size;
-  num_pages_ = (num_buckets_ - 1) / (BLOCK_ARRAY_SIZE + 1);
+  num_pages_ = (num_buckets_ - 1) / BLOCK_ARRAY_SIZE + 1;
   last_block_array_size_ = num_buckets_ - (num_pages_ - 1) * BLOCK_ARRAY_SIZE;
 
   // 保存老的 Header Page
@@ -235,7 +238,7 @@ void HASH_TABLE_TYPE::Resize(size_t initial_size) {
 
   // 删除 old 的 Header Page
   raw_header_page->WUnlatch();
-  buffer_pool_manager_->UnpinPage(old_header_page_id, false);
+  buffer_pool_manager_->UnpinPage(header_page_id_, false);
   buffer_pool_manager_->DeletePage(old_header_page_id);
   table_latch_.WUnlock();
 }
@@ -249,6 +252,35 @@ size_t HASH_TABLE_TYPE::GetSize() {
   size_t size = num_buckets_;
   table_latch_.RUnlock();
   return size;
+}
+
+template <typename KeyType, typename ValueType, typename KeyComparator>
+void HASH_TABLE_TYPE::StepForward(slot_offset_t &bucket_index, block_index_t &block_index, Page *&raw_block_page,
+                                  HASH_TABLE_BLOCK_TYPE *&block_page, LockType lockType) {
+  if (++bucket_index != GetBlockArraySize(block_index)) {
+    return;
+  }
+
+  // move to next block page
+  if (lockType == LockType::READ) {
+    raw_block_page->RUnlatch();
+  } else {
+    raw_block_page->WUnlatch();
+  }
+  buffer_pool_manager_->UnpinPage(page_ids_[block_index], false);
+
+  // update index
+  bucket_index = 0;
+  block_index = (block_index + 1) % num_pages_;
+
+  // update page
+  raw_block_page = buffer_pool_manager_->FetchPage(page_ids_[block_index]);
+  if (lockType == LockType::READ) {
+    raw_block_page->RLatch();
+  } else {
+    raw_block_page->WLatch();
+  }
+  block_page = BlockPageCast(raw_block_page);
 }
 
 template class LinearProbeHashTable<int, int, IntComparator>;

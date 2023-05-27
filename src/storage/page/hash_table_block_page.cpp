@@ -30,6 +30,7 @@ bool HASH_TABLE_BLOCK_TYPE::Insert(slot_offset_t bucket_ind, const KeyType &key,
   if (IsReadable(bucket_ind)) {
     return false;
   }
+
   array_[bucket_ind] = {key, value};
   SetBit(readable_, bucket_ind, true);
   SetBit(occupied_, bucket_ind, true);
@@ -59,7 +60,7 @@ bool HASH_TABLE_BLOCK_TYPE::GetBit(const std::atomic_char *array, slot_offset_t 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 void HASH_TABLE_BLOCK_TYPE::SetBit(std::atomic_char *array, slot_offset_t bucket_ind, bool value) {
   if (value) {
-    array[bucket_ind / 8] = (1 << bucket_ind % 8);
+    array[bucket_ind / 8] |= (1 << bucket_ind % 8);
   } else {
     array[bucket_ind / 8] &= ~(1 << bucket_ind % 8);
   }
