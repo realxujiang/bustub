@@ -77,11 +77,10 @@ class SimpleHashJoinHashTable {
 };
 
 // TODO(student): when you are ready to attempt task 3, replace the using declaration!
-using HT = SimpleHashJoinHashTable;
-
-// using HashJoinKeyType = ???;
-// using HashJoinValType = ???;
-// using HT = LinearProbeHashTable<HashJoinKeyType, HashJoinValType, HashComparator>;
+//using HT = SimpleHashJoinHashTable;
+using HashJoinKeyType = hash_t;
+using HashJoinValType = TmpTuple;
+using HT = LinearProbeHashTable<HashJoinKeyType, HashJoinValType, HashComparator>;
 
 /**
  * HashJoinExecutor executes hash join operations.
@@ -132,14 +131,17 @@ class HashJoinExecutor : public AbstractExecutor {
  private:
   /** The hash join plan node. */
   const HashJoinPlanNode *plan_;
+  std::unique_ptr<AbstractExecutor> left_executor_;
+  std::unique_ptr<AbstractExecutor> right_executor_;
+
   /** The comparator is used to compare hashes. */
   [[maybe_unused]] HashComparator jht_comp_{};
   /** The identity hash function. */
   IdentityHashFunction jht_hash_fn_{};
 
   /** The hash table that we are using. */
-  // Uncomment me! HT jht_;
+  HT jht_;
   /** The number of buckets in the hash table. */
-  static constexpr uint32_t jht_num_buckets_ = 2;
+  static constexpr uint32_t jht_num_buckets_ = 1000;
 };
 }  // namespace bustub
