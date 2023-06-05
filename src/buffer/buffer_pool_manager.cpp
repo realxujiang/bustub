@@ -184,6 +184,14 @@ frame_id_t BufferPoolManager::GetFrameId() {
     if (!replacer_->Victim(&frame_id)) {
       return INVALID_PAGE_ID;
     }
+
+    // 脏页 flush log 到磁盘
+    if (enable_logging) {
+      Page &page = pages_[frame_id];
+      if (page.IsDirty() && page.GetLSN() > log_manager_->GetPersistentLSN()) {
+        log_manager_->Flush();
+      }
+    }
   }
   return frame_id;
 }

@@ -19,6 +19,7 @@
 #include "buffer/buffer_pool_manager.h"
 #include "concurrency/lock_manager.h"
 #include "recovery/log_record.h"
+#include "storage/page/table_page.h"
 
 namespace bustub {
 
@@ -42,6 +43,14 @@ class LogRecovery {
   bool DeserializeLogRecord(const char *data, LogRecord *log_record);
 
  private:
+  inline TablePage *GetTablePage(const RID &rid) {
+    return reinterpret_cast<TablePage *>(buffer_pool_manager_->FetchPage(rid.GetPageId()));
+  }
+
+  inline TablePage *GetTablePage(page_id_t page_id) {
+    return reinterpret_cast<TablePage *>(buffer_pool_manager_->FetchPage(page_id));
+  }
+
   DiskManager *disk_manager_ __attribute__((__unused__));
   BufferPoolManager *buffer_pool_manager_ __attribute__((__unused__));
 
