@@ -284,7 +284,7 @@ void HASH_TABLE_TYPE::StepForward(slot_offset_t &bucket_index, block_index_t &bl
 }
 
 template class LinearProbeHashTable<int, int, IntComparator>;
-
+template class LinearProbeHashTable<hash_t, TmpTuple, HashComparator>;
 template class LinearProbeHashTable<GenericKey<4>, RID, GenericComparator<4>>;
 template class LinearProbeHashTable<GenericKey<8>, RID, GenericComparator<8>>;
 template class LinearProbeHashTable<GenericKey<16>, RID, GenericComparator<16>>;
